@@ -1,6 +1,9 @@
 const Apify = require('apify');
-const getTranscript = require('youtube-transcript');
+const ytTranscript = require('youtube-transcript');
 const cheerio = require('cheerio');
+
+// ✅ Funktion holen – egal ob direkt oder als .getTranscript
+const getTranscript = typeof ytTranscript === 'function' ? ytTranscript : ytTranscript.getTranscript;
 
 Apify.main(async () => {
     const { videoUrl } = await Apify.getInput();
@@ -22,7 +25,7 @@ Apify.main(async () => {
         const videoIds = new Set();
         $('a#video-title').each((_, el) => {
             const href = $(el).attr('href');
-            const match = href && href.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
+            const match = href && href.match(/watch\\?v=([a-zA-Z0-9_-]{11})/);
             if (match) videoIds.add(match[1]);
         });
 
@@ -34,7 +37,7 @@ Apify.main(async () => {
     }
 
     for (const link of videoLinks) {
-        const match = link.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        const match = link.match(/(?:v=|youtu\\.be\\/)([a-zA-Z0-9_-]{11})/);
         if (!match) {
             console.warn(`⚠️ Ungültiger Link übersprungen: ${link}`);
             continue;
@@ -59,9 +62,11 @@ Apify.main(async () => {
                 url: `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
                 json: true,
             });
-            title = res.body.title;
-            channel = res.body.author_name;
-        } catch (e) {}
+            title = res.body.title || '';
+            channel = res.body.author_name || '';
+        } catch (e) {
+            console.warn('⚠️ Titel/Channel konnte nicht geladen werden');
+        }
 
         const data = {
             channel,
@@ -72,7 +77,6 @@ Apify.main(async () => {
 
         await Apify.pushData(data);
 
-        // Wenn es nur ein Video ist, speichere auch als Datei
         if (videoLinks.length === 1) {
             await Apify.setValue('transcript.json', transcript, { contentType: 'application/json' });
             await Apify.setValue('transcript.txt', text, { contentType: 'text/plain' });
