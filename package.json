@@ -1,13 +1,14 @@
 {
   "name": "apify-youtube-transcript",
   "version": "1.0.0",
-  "description": "Apify Actor zum Holen von YouTube‐Transkripten",
+  "description": "Apify Actor zum Holen von YouTube‐Transkripten (auch Channel-Scraping)",
   "main": "main.js",
   "scripts": {
     "start": "node main.js"
   },
   "dependencies": {
     "apify": "^2.0.0",
-    "youtube-transcript": "^1.1.2"
+    "youtube-transcript": "^1.1.2",
+    "cheerio": "^1.0.0-rc.12"
   }
 }
