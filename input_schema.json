@@ -6,7 +6,8 @@
     "videoUrl": {
       "title": "YouTube Video- oder Channel-URL",
       "type": "string",
-      "description": "Entweder ein einzelnes Video oder ein kompletter Channel (z.B. https://www.youtube.com/@kanalname)"
+      "description": "Entweder ein einzelnes Video oder ein kompletter Channel (z.B. https://www.youtube.com/@kanalname)",
+      "editor": "textfield"
     }
   },
   "required": ["videoUrl"]
