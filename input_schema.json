@@ -1,0 +1,14 @@
+{
+  "title": "YouTube Transcript Fetcher",
+  "schemaVersion": 1,
+  "type": "object",
+  "properties": {
+    "videoUrl": {
+      "title": "YouTube Video URL",
+      "type": "string",
+      "description": "Vollständige URL des YouTube‐Videos, z.B. https://youtu.be/…",
+      "editor": "textfield"
+    }
+  },
+  "required": ["videoUrl"]
+}
