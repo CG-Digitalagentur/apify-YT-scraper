@@ -1,57 +1,85 @@
-// Importiere Apify-SDK (für Input, Output, Dateien usw.)
 const Apify = require('apify');
-
-// Importiere die Bibliothek für YouTube-Transkripte
 const getTranscript = require('youtube-transcript');
+const cheerio = require('cheerio');
 
 Apify.main(async () => {
-    // Hole die Eingabe aus der Apify-UI (JSON mit videoUrl)
     const { videoUrl } = await Apify.getInput();
-    if (!videoUrl) throw new Error('❌ Der Input videoUrl fehlt!');
+    if (!videoUrl) throw new Error('❌ videoUrl fehlt im Input.');
 
-    // Extrahiere die Video-ID aus verschiedenen möglichen YouTube-URLs
-    const match = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (!match) throw new Error(`❌ Konnte keine gültige Video-ID in der URL finden: ${videoUrl}`);
-    const videoId = match[1];
+    const isChannel = videoUrl.includes('youtube.com/@') || videoUrl.includes('/channel/');
 
-    // Versuche das Transkript abzurufen
-    let transcriptItems;
-    try {
-        transcriptItems = await getTranscript(videoId, { lang: 'de' });
-    } catch (err) {
-        throw new Error(`❌ Fehler beim Abrufen des Transkripts: ${err.message}`);
-    }
+    let videoLinks = [];
 
-    if (!transcriptItems || transcriptItems.length === 0) {
-        throw new Error('❌ Kein Transkript gefunden oder das Video enthält keins.');
-    }
+    if (isChannel) {
+        console.log('🔎 Kanal erkannt – lade Videos…');
 
-    // Erzeuge den reinen Text mit Leerzeichen dazwischen
-    const fullText = transcriptItems.map(item => item.text).join(' ');
-
-    // Versuche optional den Videotitel via oEmbed zu holen
-    let title = '';
-    try {
-        const res = await Apify.utils.requestAsBrowser({
-            url: `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
-            json: true,
+        const response = await Apify.utils.requestAsBrowser({
+            url: videoUrl + '/videos',
         });
-        title = res.body.title || '';
-    } catch (err) {
-        // Falls die oEmbed-Anfrage fehlschlägt, einfach ignorieren
+
+        const $ = cheerio.load(response.body);
+
+        const videoIds = new Set();
+        $('a#video-title').each((_, el) => {
+            const href = $(el).attr('href');
+            const match = href && href.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
+            if (match) videoIds.add(match[1]);
+        });
+
+        videoLinks = [...videoIds].map(id => `https://www.youtube.com/watch?v=${id}`);
+        console.log(`📹 Gefundene Videos: ${videoLinks.length}`);
+    } else {
+        console.log('▶️ Einzelnes Video erkannt.');
+        videoLinks = [videoUrl];
     }
 
-    // Speichere alle Ergebnisse
-    await Apify.setValue('transcript.json', transcriptItems, { contentType: 'application/json' });
-    await Apify.setValue('transcript.txt', fullText, { contentType: 'text/plain' });
+    for (const link of videoLinks) {
+        const match = link.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (!match) {
+            console.warn(`⚠️ Ungültiger Link übersprungen: ${link}`);
+            continue;
+        }
 
-    // Ausgabe auch als Dataset-Item (z.B. für weitere Verarbeitung)
-    await Apify.pushData({
-        videoId,
-        title,
-        url: videoUrl,
-        transcript: transcriptItems,
-    });
+        const videoId = match[1];
 
-    console.log('✅ Transkript erfolgreich verarbeitet und gespeichert!');
+        let transcript;
+        try {
+            transcript = await getTranscript(videoId, { lang: 'de' });
+        } catch (err) {
+            console.warn(`⚠️ Kein Transkript für ${link}: ${err.message}`);
+            continue;
+        }
+
+        const text = transcript.map(item => item.text).join(' ');
+
+        let title = '';
+        let channel = '';
+        try {
+            const res = await Apify.utils.requestAsBrowser({
+                url: `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+                json: true,
+            });
+            title = res.body.title;
+            channel = res.body.author_name;
+        } catch (e) {}
+
+        const data = {
+            channel,
+            title,
+            videoUrl: link,
+            transcript: text,
+        };
+
+        await Apify.pushData(data);
+
+        // Wenn es nur ein Video ist, speichere auch als Datei
+        if (videoLinks.length === 1) {
+            await Apify.setValue('transcript.json', transcript, { contentType: 'application/json' });
+            await Apify.setValue('transcript.txt', text, { contentType: 'text/plain' });
+        }
+
+        console.log(`✅ Fertig: ${title}`);
+    }
+
+    console.log('🎉 Alle Videos verarbeitet!');
 });
