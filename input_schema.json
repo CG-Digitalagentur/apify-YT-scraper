@@ -1,13 +1,12 @@
 {
-  "title": "YouTube Transcript Fetcher",
+  "title": "YouTube Transcript Scraper",
   "schemaVersion": 1,
   "type": "object",
   "properties": {
     "videoUrl": {
-      "title": "YouTube Video URL",
+      "title": "YouTube Video- oder Channel-URL",
       "type": "string",
-      "description": "Vollständige URL des YouTube‐Videos, z.B. https://youtu.be/…",
-      "editor": "textfield"
+      "description": "Entweder ein einzelnes Video oder ein kompletter Channel (z.B. https://www.youtube.com/@kanalname)"
     }
   },
   "required": ["videoUrl"]
