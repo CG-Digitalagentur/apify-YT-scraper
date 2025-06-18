@@ -1,0 +1,13 @@
+{
+  "name": "apify-youtube-transcript",
+  "version": "1.0.0",
+  "description": "Apify Actor zum Holen von YouTube‐Transkripten",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "apify": "^2.0.0",
+    "youtube-transcript": "^1.1.2"
+  }
+}
