@@ -37,7 +37,7 @@ Apify.main(async () => {
     }
 
     for (const link of videoLinks) {
-        const match = link.match(/(?:v=|youtu\\.be\\/)([a-zA-Z0-9_-]{11})/);
+        const match = link.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
         if (!match) {
             console.warn(`⚠️ Ungültiger Link übersprungen: ${link}`);
             continue;
