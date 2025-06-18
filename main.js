@@ -2,7 +2,7 @@
 const Apify = require('apify');
 
 // Importiere die Bibliothek für YouTube-Transkripte
-const { getTranscript } = require('youtube-transcript');
+const getTranscript = require('youtube-transcript');
 
 Apify.main(async () => {
     // Hole die Eingabe aus der Apify-UI (JSON mit videoUrl)
